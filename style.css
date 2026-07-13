@@ -171,28 +171,90 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .quiz-wrap { padding-top: var(--sp-5); }
 
-.page-header { margin-bottom: var(--sp-5); }
-.page-header h1 {
-  font-size: clamp(1.45rem, 3vw, 1.85rem);
-  letter-spacing: -0.02em;
-  margin: var(--sp-2) 0;
-}
-.page-header p {
-  color: var(--muted);
-  max-width: 56ch;
-  font-size: 0.95rem;
+/* —— Search —— */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  position: relative;
 }
 
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--accent);
-  font-weight: 700;
-  font-size: 0.85rem;
+.search-icon {
+  color: var(--muted);
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-weight: 500;
+  color: var(--text);
+  min-width: 0;
+}
+
+.search-input::placeholder { color: var(--muted); font-weight: 500; }
+
+.search-clear { flex-shrink: 0; }
+
+.search-results {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--sp-4);
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.search-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.search-item:hover {
   background: var(--accent-soft);
-  padding: 6px 12px;
+  color: var(--accent);
+}
+
+.search-item-id {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 8px;
   border-radius: var(--r-full);
+}
+
+.search-item-text {
+  font-size: 0.88rem;
+  color: inherit;
+}
+
+.search-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 /* —— Tabs —— */
@@ -450,9 +512,67 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   font-size: 0.85rem;
 }
 
+.option .check-mark {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+
 .option .opt-text { flex: 1; padding-top: 4px; font-size: 0.95rem; }
+.option .opt-letter-inline {
+  font-weight: 800;
+  color: var(--accent);
+  margin-right: 2px;
+}
+
+.option.picked {
+  border-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.option.picked .check-mark {
+  background: var(--accent);
+  color: #fff;
+}
 
 .option.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+.multi-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -6px 0 14px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.multi-hint.hidden { display: none; }
+
+.submit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.submit-row.hidden { display: none; }
+
+.submit-count {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
 
 .option.correct {
   border-color: var(--correct);
@@ -688,36 +808,7 @@ kbd {
   box-shadow: var(--shadow-sm);
 }
 
-/* —— Footer —— */
-.site-footer {
-  border-top: 1px solid var(--border);
-  padding: 22px 0 32px;
-  color: var(--muted);
-  font-size: 0.85rem;
-  margin-top: auto;
-  background: rgba(255, 255, 255, 0.6);
-}
-
-.footer-inner {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px 24px;
-}
-
-.footer-inner span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.site-footer code {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 0.78rem;
-}
+.app-main { padding-bottom: var(--sp-10); }
 
 @media (max-width: 560px) {
   .brand-text span { display: none; }

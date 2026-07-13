@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Quiz MLN – Ôn tập trắc nghiệm</title>
-  <meta name="description" content="Quiz ôn tập trắc nghiệm MLN: ngẫu nhiên, lưu câu sai, kiểu hỏi khác" />
+  <meta name="description" content="Quiz ôn tập trắc nghiệm MLN: ngẫu nhiên, lưu câu sai, tìm kiếm, chọn nhiều đáp án" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -41,12 +41,6 @@
 
     <main class="app-main">
       <div class="container quiz-wrap">
-        <div class="page-header">
-          <span class="eyebrow"><i class="fa-solid fa-book-open"></i> Ngân hàng câu hỏi</span>
-          <h1>Làm bài trắc nghiệm</h1>
-          <p>Ngẫu nhiên · lưu câu sai · làm lại · mũi tên chuyển câu · kiểu hỏi khác hiện sau khi chọn.</p>
-        </div>
-
         <nav class="tabs" role="tablist" aria-label="Chế độ làm bài">
           <button type="button" class="tab active" data-tab="all" role="tab" aria-selected="true">
             <i class="fa-solid fa-layer-group"></i>
@@ -59,6 +53,22 @@
             <span class="tab-count tab-count-warn" id="badgeWrong">0</span>
           </button>
         </nav>
+
+        <div class="search-bar card-soft">
+          <i class="fa-solid fa-magnifying-glass search-icon" aria-hidden="true"></i>
+          <input
+            type="search"
+            id="searchInput"
+            class="search-input"
+            placeholder="Tìm câu hỏi theo nội dung, từ khóa…"
+            autocomplete="off"
+            aria-label="Tìm kiếm câu hỏi"
+          />
+          <button type="button" class="btn btn-ghost btn-sm search-clear hidden" id="btnClearSearch" title="Xóa tìm kiếm">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="search-results hidden" id="searchResults" role="listbox" aria-label="Kết quả tìm kiếm"></div>
 
         <div class="toolbar card-soft">
           <label class="toggle">
@@ -86,7 +96,17 @@
             <span class="q-id" id="qId"></span>
           </div>
           <h2 class="question" id="questionText">Đang tải…</h2>
+          <p class="multi-hint hidden" id="multiHint">
+            <i class="fa-solid fa-square-check"></i>
+            Chọn nhiều phương án, rồi bấm <strong>Xác nhận</strong>
+          </p>
           <div class="options" id="options" role="listbox" aria-label="Các phương án"></div>
+          <div class="submit-row hidden" id="submitRow">
+            <button type="button" class="btn btn-primary" id="btnSubmit" disabled>
+              <i class="fa-solid fa-paper-plane"></i> Xác nhận
+            </button>
+            <span class="submit-count" id="submitCount">Đã chọn 0</span>
+          </div>
           <div class="feedback hidden" id="feedback" role="status"></div>
           <div class="alt-panel hidden" id="altPanel" aria-live="polite"></div>
         </section>
@@ -119,17 +139,10 @@
 
         <p class="hint">
           <i class="fa-regular fa-keyboard"></i>
-          Phím tắt: <kbd>←</kbd> <kbd>→</kbd> chuyển câu · <kbd>1</kbd>–<kbd>5</kbd> hoặc <kbd>A</kbd>–<kbd>E</kbd> chọn đáp án
+          <kbd>←</kbd> <kbd>→</kbd> chuyển câu · <kbd>A</kbd>–<kbd>E</kbd> chọn · multi: chọn nhiều rồi <kbd>Enter</kbd> xác nhận
         </p>
       </div>
     </main>
-
-    <footer class="site-footer">
-      <div class="container footer-inner">
-        <span><i class="fa-solid fa-database"></i> Dữ liệu từ <code>data.docx</code></span>
-        <span><i class="fa-brands fa-github"></i> Deploy tĩnh GitHub Pages</span>
-      </div>
-    </footer>
   </div>
 
   <script src="questions.js"></script>

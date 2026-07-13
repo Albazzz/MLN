@@ -1,28 +1,32 @@
 /**
  * Quiz MLN – static quiz app
- * Features: random order, wrong-answer bank, tab redo, arrow navigation
+ * Multi-select for multi-answer questions, search, wrong bank, navigation
  */
 (function () {
   "use strict";
 
   const STORAGE_KEY = "mln-quiz-wrong-ids-v1";
-  const LETTERS = ["A", "B", "C", "D"];
 
-  /** @type {Array<{id:number,question:string,options:Object.<string,string>,answer:string}>} */
+  /** @type {Array<{id:number,question:string,options:Object.<string,string>,answer:string,answers?:string[]}>} */
   const ALL = Array.isArray(window.QUIZ_QUESTIONS) ? window.QUIZ_QUESTIONS : [];
 
   // —— State ——
   let mode = "all"; // 'all' | 'wrong'
-  let queue = []; // question objects currently in play
+  let queue = [];
   let index = 0;
   let answered = false;
-  let selectedLetter = null;
+  /** @type {string[]} pending multi-select or single choice before submit */
+  let selectedLetters = [];
   let sessionCorrect = 0;
   let sessionAnswered = 0;
   /** @type {Set<number>} */
   let wrongIds = loadWrongIds();
-  /** @type {Map<number, string>} last selected answer per question id (session) */
+  /**
+   * lastChoice: id -> string[] of chosen letters
+   * @type {Map<number, string[]>}
+   */
   let lastChoice = new Map();
+  let searchQuery = "";
 
   // —— DOM ——
   const $ = (sel) => document.querySelector(sel);
@@ -30,7 +34,11 @@
     qIndex: $("#qIndex"),
     qId: $("#qId"),
     questionText: $("#questionText"),
+    multiHint: $("#multiHint"),
     options: $("#options"),
+    submitRow: $("#submitRow"),
+    btnSubmit: $("#btnSubmit"),
+    submitCount: $("#submitCount"),
     feedback: $("#feedback"),
     altPanel: $("#altPanel"),
     quizCard: $("#quizCard"),
@@ -53,19 +61,32 @@
     btnResetSession: $("#btnResetSession"),
     btnClearWrong: $("#btnClearWrong"),
     btnGoAll: $("#btnGoAll"),
+    searchInput: $("#searchInput"),
+    searchResults: $("#searchResults"),
+    btnClearSearch: $("#btnClearSearch"),
   };
 
-  /** Correct letter set for a question (supports multi like ABC). */
   function correctLetters(q) {
     if (!q) return [];
     if (Array.isArray(q.answers) && q.answers.length) {
-      return q.answers.map(String);
+      return q.answers.map(String).sort();
     }
     return q.answer ? [String(q.answer)] : [];
   }
 
-  function isCorrectChoice(q, letter) {
-    return correctLetters(q).includes(letter);
+  function isMulti(q) {
+    return correctLetters(q).length > 1;
+  }
+
+  function setsEqual(a, b) {
+    if (a.length !== b.length) return false;
+    const sa = a.slice().sort().join(",");
+    const sb = b.slice().sort().join(",");
+    return sa === sb;
+  }
+
+  function isCorrectSelection(q, chosen) {
+    return setsEqual(correctLetters(q), chosen || []);
   }
 
   // —— Storage ——
@@ -85,7 +106,7 @@
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...wrongIds]));
     } catch {
-      /* ignore quota */
+      /* ignore */
     }
   }
 
@@ -112,6 +133,14 @@
     return a;
   }
 
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
   function getSourceList() {
     if (mode === "wrong") {
       return ALL.filter((q) => wrongIds.has(q.id));
@@ -132,18 +161,42 @@
     } else {
       index = 0;
     }
-
-    // Clamp
     if (index >= queue.length) index = Math.max(0, queue.length - 1);
 
     lastChoice = new Map();
     answered = false;
-    selectedLetter = null;
+    selectedLetters = [];
     render();
   }
 
   function currentQuestion() {
     return queue[index] || null;
+  }
+
+  function goToQuestionId(id) {
+    // Prefer current queue; if not found, switch to all + unshuffle order by id
+    let found = queue.findIndex((q) => q.id === id);
+    if (found < 0) {
+      mode = "all";
+      document.querySelectorAll(".tab").forEach((t) => {
+        const active = t.dataset.tab === "all";
+        t.classList.toggle("active", active);
+        t.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      el.shuffleToggle.checked = false;
+      queue = ALL.slice();
+      found = queue.findIndex((q) => q.id === id);
+    }
+    if (found < 0) return;
+    index = found;
+    answered = false;
+    selectedLetters = [];
+    hideSearchResults();
+    if (el.searchInput) el.searchInput.value = "";
+    searchQuery = "";
+    if (el.btnClearSearch) el.btnClearSearch.classList.add("hidden");
+    render();
+    el.quizCard?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   // —— Render ——
@@ -154,9 +207,24 @@
     el.statCorrect.textContent = String(sessionCorrect);
     el.statTotal.textContent = String(queue.length);
     el.statProgress.textContent = queue.length ? String(index + 1) : "0";
-
     const pct = queue.length ? ((index + 1) / queue.length) * 100 : 0;
     el.progressBar.style.width = pct + "%";
+  }
+
+  function updateSubmitUI(q) {
+    if (!el.submitRow || !el.btnSubmit) return;
+    if (!q || answered || !isMulti(q)) {
+      el.submitRow.classList.add("hidden");
+      return;
+    }
+    el.submitRow.classList.remove("hidden");
+    el.btnSubmit.disabled = selectedLetters.length === 0;
+    if (el.submitCount) {
+      el.submitCount.textContent =
+        selectedLetters.length === 0
+          ? "Chưa chọn"
+          : `Đã chọn ${selectedLetters.length}: ${selectedLetters.slice().sort().join(", ")}`;
+    }
   }
 
   function render() {
@@ -167,10 +235,10 @@
       el.quizCard.classList.add("hidden");
       el.emptyState.classList.remove("hidden");
       if (mode === "wrong") {
-        el.emptyTitle.textContent = wrongIds.size === 0 ? "Chưa có câu sai 🎉" : "Hết câu trong hàng đợi";
+        el.emptyTitle.textContent = wrongIds.size === 0 ? "Chưa có câu sai" : "Hết câu trong hàng đợi";
         el.emptyDesc.textContent =
           wrongIds.size === 0
-            ? "Khi bạn trả lời sai ở tab Tất cả, câu sẽ được lưu ở đây để làm lại (chế độ ngẫu nhiên)."
+            ? "Khi bạn trả lời sai ở tab Tất cả, câu sẽ được lưu ở đây để làm lại."
             : "Bấm «Xáo lại» hoặc chuyển tab để tiếp tục.";
       } else {
         el.emptyTitle.textContent = "Không có câu hỏi";
@@ -180,51 +248,68 @@
       el.btnNext.disabled = true;
       el.jumpInput.max = 1;
       el.jumpInput.value = "";
+      if (el.submitRow) el.submitRow.classList.add("hidden");
+      if (el.multiHint) el.multiHint.classList.add("hidden");
       return;
     }
 
     el.emptyState.classList.add("hidden");
     el.quizCard.classList.remove("hidden");
 
-    // Re-trigger card animation
     el.quizCard.style.animation = "none";
     void el.quizCard.offsetWidth;
     el.quizCard.style.animation = "";
 
-    el.qIndex.textContent = `Câu ${index + 1} / ${queue.length}`;
+    el.qIndex.innerHTML = `<i class="fa-solid fa-circle-question"></i> Câu ${index + 1} / ${queue.length}`;
     el.qId.textContent = `#${q.id}` + (wrongIds.has(q.id) ? " · đã sai trước đó" : "");
     el.questionText.textContent = q.question;
 
-    const letters = Object.keys(q.options).sort();
+    const multi = isMulti(q);
+    if (el.multiHint) {
+      el.multiHint.classList.toggle("hidden", !multi || answered);
+    }
+
     const prev = lastChoice.get(q.id);
     answered = prev != null;
-    selectedLetter = prev || null;
+    selectedLetters = answered ? prev.slice() : [];
     const corrects = correctLetters(q);
+    const letters = Object.keys(q.options).sort();
 
     el.options.innerHTML = "";
     letters.forEach((letter) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "option";
+      btn.className = "option" + (multi ? " option-multi" : "");
       btn.setAttribute("role", "option");
       btn.dataset.letter = letter;
-      btn.innerHTML = `<span class="letter">${letter}</span><span class="opt-text">${escapeHtml(
+      const mark = multi
+        ? `<span class="check-mark"><i class="fa-regular fa-square"></i></span>`
+        : `<span class="letter">${letter}</span>`;
+      btn.innerHTML = `${mark}<span class="opt-text"><span class="opt-letter-inline">${letter}.</span> ${escapeHtml(
         q.options[letter]
       )}</span>`;
-      btn.addEventListener("click", () => onSelect(letter));
+      btn.addEventListener("click", () => onToggle(letter));
       if (answered) {
         btn.disabled = true;
-        applyOptionState(btn, letter, corrects, selectedLetter);
+        applyOptionState(btn, letter, corrects, selectedLetters);
+      } else if (selectedLetters.includes(letter)) {
+        btn.classList.add("picked");
+        if (multi) {
+          btn.querySelector(".check-mark i")?.classList.replace("fa-regular", "fa-solid");
+          btn.querySelector(".check-mark i")?.classList.replace("fa-square", "fa-square-check");
+        }
       }
       el.options.appendChild(btn);
     });
 
     if (answered) {
-      showFeedback(isCorrectChoice(q, selectedLetter), q);
+      showFeedback(isCorrectSelection(q, selectedLetters), q);
       showAltPanel(q);
+      if (el.submitRow) el.submitRow.classList.add("hidden");
     } else {
       hideFeedback();
       hideAltPanel();
+      updateSubmitUI(q);
     }
 
     el.btnPrev.disabled = index <= 0;
@@ -233,55 +318,68 @@
     el.jumpInput.value = String(index + 1);
   }
 
+  /**
+   * @param {HTMLElement} btn
+   * @param {string} letter
+   * @param {string[]} corrects
+   * @param {string[]} chosen
+   */
   function applyOptionState(btn, letter, corrects, chosen) {
-    const correctSet = Array.isArray(corrects) ? corrects : [corrects];
-    if (correctSet.includes(letter)) {
+    const correctSet = corrects || [];
+    const chosenSet = chosen || [];
+    const isCorrect = correctSet.includes(letter);
+    const isChosen = chosenSet.includes(letter);
+
+    if (isCorrect) {
       btn.classList.add("correct");
-    } else if (letter === chosen) {
+    } else if (isChosen) {
       btn.classList.add("wrong");
     } else {
       btn.classList.add("dimmed");
     }
-    if (letter === chosen) btn.classList.add("selected");
-  }
+    if (isChosen) btn.classList.add("selected");
 
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+    // multi checkbox icons
+    const icon = btn.querySelector(".check-mark i");
+    if (icon) {
+      icon.className = isCorrect
+        ? "fa-solid fa-square-check"
+        : isChosen
+          ? "fa-solid fa-square-xmark"
+          : "fa-regular fa-square";
+    }
   }
 
   function formatCorrectAnswer(q) {
     const letters = correctLetters(q);
-    const parts = letters.map((L) => {
-      const t = (q.options && q.options[L]) || "";
-      return t ? `${L}. ${t}` : L;
-    });
-    return parts.join(" · ");
+    return letters
+      .map((L) => {
+        const t = (q.options && q.options[L]) || "";
+        return t ? `${L}. ${t}` : L;
+      })
+      .join(" · ");
   }
 
   function showFeedback(ok, q) {
     el.feedback.classList.remove("hidden", "ok", "err");
     if (ok) {
       el.feedback.classList.add("ok");
-      const multi = correctLetters(q).length > 1;
+      const multi = isMulti(q);
       const msg = multi
         ? `Chính xác! (Đáp án: ${correctLetters(q).join(", ")})`
         : "Chính xác!";
       el.feedback.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>${escapeHtml(msg)}</span>`;
     } else {
       el.feedback.classList.add("err");
-      el.feedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i><span>Sai. Đáp án đúng: ${escapeHtml(
-        formatCorrectAnswer(q)
-      )}</span>`;
+      const chosen = (selectedLetters || []).slice().sort().join(", ") || "—";
+      el.feedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i><span>Sai. Bạn chọn: ${escapeHtml(
+        chosen
+      )}. Đáp án đúng: ${escapeHtml(formatCorrectAnswer(q))}</span>`;
     }
   }
 
   function hideFeedback() {
     el.feedback.classList.add("hidden");
-    el.feedback.textContent = "";
     el.feedback.innerHTML = "";
     el.feedback.classList.remove("ok", "err");
   }
@@ -292,7 +390,6 @@
     el.altPanel.innerHTML = "";
   }
 
-  /** Show "Kiểu hỏi khác" block(s) with answers after user answered. */
   function showAltPanel(q) {
     if (!el.altPanel) return;
     const alts = (q && q.alternatives) || [];
@@ -334,7 +431,6 @@
       } else {
         html += `<p class="alt-answer warn"><i class="fa-solid fa-triangle-exclamation"></i><span>Chưa có đáp án trong dữ liệu nguồn</span></p>`;
       }
-
       html += `</div>`;
     });
 
@@ -342,38 +438,68 @@
     el.altPanel.classList.remove("hidden");
   }
 
-  // —— Interactions ——
-  function onSelect(letter) {
+  // —— Selection ——
+  function onToggle(letter) {
     const q = currentQuestion();
     if (!q || answered) return;
 
+    if (!isMulti(q)) {
+      // single choice — submit immediately
+      commitAnswer(q, [letter]);
+      return;
+    }
+
+    // multi: toggle
+    const i = selectedLetters.indexOf(letter);
+    if (i >= 0) selectedLetters.splice(i, 1);
+    else selectedLetters.push(letter);
+
+    // refresh picked UI without full re-render of feedback
+    el.options.querySelectorAll(".option").forEach((btn) => {
+      const L = btn.dataset.letter;
+      const on = selectedLetters.includes(L);
+      btn.classList.toggle("picked", on);
+      const icon = btn.querySelector(".check-mark i");
+      if (icon) {
+        icon.className = on ? "fa-solid fa-square-check" : "fa-regular fa-square";
+      }
+    });
+    updateSubmitUI(q);
+  }
+
+  function commitAnswer(q, chosen) {
+    if (!q || answered) return;
     answered = true;
-    selectedLetter = letter;
-    lastChoice.set(q.id, letter);
+    selectedLetters = chosen.slice().sort();
+    lastChoice.set(q.id, selectedLetters.slice());
     sessionAnswered += 1;
 
-    const ok = isCorrectChoice(q, letter);
+    const ok = isCorrectSelection(q, selectedLetters);
     if (ok) {
       sessionCorrect += 1;
-      // If reviewing wrong tab and get it right, remove from wrong bank
-      if (mode === "wrong") {
-        removeWrong(q.id);
-      }
+      if (mode === "wrong") removeWrong(q.id);
     } else {
       addWrong(q.id);
     }
 
-    // Update option styles
     const corrects = correctLetters(q);
-    const buttons = el.options.querySelectorAll(".option");
-    buttons.forEach((btn) => {
+    el.options.querySelectorAll(".option").forEach((btn) => {
       btn.disabled = true;
-      applyOptionState(btn, btn.dataset.letter, corrects, letter);
+      applyOptionState(btn, btn.dataset.letter, corrects, selectedLetters);
     });
+
+    if (el.multiHint) el.multiHint.classList.add("hidden");
+    if (el.submitRow) el.submitRow.classList.add("hidden");
 
     showFeedback(ok, q);
     showAltPanel(q);
     updateBadges();
+  }
+
+  function submitMulti() {
+    const q = currentQuestion();
+    if (!q || answered || !isMulti(q) || selectedLetters.length === 0) return;
+    commitAnswer(q, selectedLetters);
   }
 
   function go(delta) {
@@ -381,7 +507,7 @@
     if (next < 0 || next >= queue.length) return;
     index = next;
     answered = false;
-    selectedLetter = null;
+    selectedLetters = [];
     hideAltPanel();
     render();
   }
@@ -391,7 +517,7 @@
     if (!Number.isFinite(i) || i < 0 || i >= queue.length) return;
     index = i;
     answered = false;
-    selectedLetter = null;
+    selectedLetters = [];
     hideAltPanel();
     render();
   }
@@ -407,6 +533,69 @@
     rebuildQueue(null);
   }
 
+  // —— Search ——
+  function hideSearchResults() {
+    if (!el.searchResults) return;
+    el.searchResults.classList.add("hidden");
+    el.searchResults.innerHTML = "";
+  }
+
+  function runSearch(q) {
+    searchQuery = (q || "").trim();
+    if (el.btnClearSearch) {
+      el.btnClearSearch.classList.toggle("hidden", !searchQuery);
+    }
+    if (!searchQuery) {
+      hideSearchResults();
+      return;
+    }
+    const tokens = searchQuery
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!tokens.length) {
+      hideSearchResults();
+      return;
+    }
+
+    const pool = mode === "wrong" ? ALL.filter((x) => wrongIds.has(x.id)) : ALL;
+    const hits = [];
+    for (const item of pool) {
+      const hay = (
+        item.question +
+        " " +
+        Object.values(item.options || {}).join(" ")
+      ).toLowerCase();
+      if (tokens.every((t) => hay.includes(t))) {
+        hits.push(item);
+        if (hits.length >= 40) break;
+      }
+    }
+
+    if (!hits.length) {
+      el.searchResults.innerHTML = `<div class="search-empty"><i class="fa-solid fa-magnifying-glass"></i> Không tìm thấy câu nào</div>`;
+      el.searchResults.classList.remove("hidden");
+      return;
+    }
+
+    el.searchResults.innerHTML = hits
+      .map((item) => {
+        const snippet = escapeHtml(item.question.length > 120 ? item.question.slice(0, 120) + "…" : item.question);
+        return `<button type="button" class="search-item" data-id="${item.id}" role="option">
+          <span class="search-item-id">#${item.id}</span>
+          <span class="search-item-text">${snippet}</span>
+        </button>`;
+      })
+      .join("");
+    el.searchResults.classList.remove("hidden");
+
+    el.searchResults.querySelectorAll(".search-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        goToQuestionId(Number(btn.dataset.id));
+      });
+    });
+  }
+
   // —— Events ——
   document.querySelectorAll(".tab").forEach((t) => {
     t.addEventListener("click", () => setMode(t.dataset.tab));
@@ -414,7 +603,6 @@
 
   el.btnPrev.addEventListener("click", () => go(-1));
   el.btnNext.addEventListener("click", () => go(1));
-
   el.btnJump.addEventListener("click", () => jumpTo(el.jumpInput.value));
   el.jumpInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
@@ -422,6 +610,10 @@
       jumpTo(el.jumpInput.value);
     }
   });
+
+  if (el.btnSubmit) {
+    el.btnSubmit.addEventListener("click", submitMulti);
+  }
 
   el.shuffleToggle.addEventListener("change", () => {
     const cur = currentQuestion();
@@ -438,7 +630,7 @@
     sessionAnswered = 0;
     lastChoice = new Map();
     answered = false;
-    selectedLetter = null;
+    selectedLetters = [];
     render();
   });
 
@@ -447,9 +639,8 @@
     if (!confirm(`Xóa ${wrongIds.size} câu sai đã lưu?`)) return;
     wrongIds = new Set();
     saveWrongIds();
-    if (mode === "wrong") {
-      rebuildQueue(null);
-    } else {
+    if (mode === "wrong") rebuildQueue(null);
+    else {
       updateBadges();
       render();
     }
@@ -457,31 +648,73 @@
 
   el.btnGoAll.addEventListener("click", () => setMode("all"));
 
+  if (el.searchInput) {
+    let searchTimer = null;
+    el.searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => runSearch(el.searchInput.value), 180);
+    });
+    el.searchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        el.searchInput.value = "";
+        runSearch("");
+        el.searchInput.blur();
+      }
+    });
+  }
+  if (el.btnClearSearch) {
+    el.btnClearSearch.addEventListener("click", () => {
+      if (el.searchInput) el.searchInput.value = "";
+      runSearch("");
+      el.searchInput?.focus();
+    });
+  }
+
+  // click outside search closes results
+  document.addEventListener("click", (e) => {
+    if (!el.searchResults || el.searchResults.classList.contains("hidden")) return;
+    const t = e.target;
+    if (el.searchResults.contains(t) || el.searchInput?.contains(t) || el.btnClearSearch?.contains(t)) return;
+    // keep results visible while typing; only hide when clicking far? better keep until clear
+  });
+
   document.addEventListener("keydown", (e) => {
-    // ignore when typing in input
-    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) {
+      // allow Enter on multi submit when not in jump/search? skip
+      return;
+    }
 
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       go(-1);
-    } else if (e.key === "ArrowRight" || e.key === "Enter") {
+    } else if (e.key === "ArrowRight") {
       e.preventDefault();
       go(1);
+    } else if (e.key === "Enter") {
+      const q = currentQuestion();
+      if (q && !answered && isMulti(q) && selectedLetters.length) {
+        e.preventDefault();
+        submitMulti();
+      } else if (!answered) {
+        // don't auto next on enter for single
+      } else {
+        e.preventDefault();
+        go(1);
+      }
     } else if (e.key >= "1" && e.key <= "5") {
       const q = currentQuestion();
       if (!q || answered) return;
       const letters = Object.keys(q.options).sort();
       const letter = letters[Number(e.key) - 1];
-      if (letter) onSelect(letter);
+      if (letter) onToggle(letter);
     } else if (/^[a-eA-E]$/.test(e.key)) {
       const q = currentQuestion();
       if (!q || answered) return;
       const letter = e.key.toUpperCase();
-      if (q.options[letter]) onSelect(letter);
+      if (q.options[letter]) onToggle(letter);
     }
   });
 
-  // Swipe on mobile
   let touchStartX = 0;
   document.addEventListener(
     "touchstart",
