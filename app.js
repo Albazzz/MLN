@@ -371,10 +371,9 @@
       el.feedback.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>${escapeHtml(msg)}</span>`;
     } else {
       el.feedback.classList.add("err");
-      const chosen = (selectedLetters || []).slice().sort().join(", ") || "—";
-      el.feedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i><span>Sai. Bạn chọn: ${escapeHtml(
-        chosen
-      )}. Đáp án đúng: ${escapeHtml(formatCorrectAnswer(q))}</span>`;
+      el.feedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i><span>Sai. Đáp án đúng: ${escapeHtml(
+        formatCorrectAnswer(q)
+      )}</span>`;
     }
   }
 
