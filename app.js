@@ -27,6 +27,8 @@
    */
   let lastChoice = new Map();
   let searchQuery = "";
+  /** User preference: show explanation panel after answering (default true) */
+  let explainVisible = true;
 
   // —— DOM ——
   const $ = (sel) => document.querySelector(sel);
@@ -41,6 +43,10 @@
     submitCount: $("#submitCount"),
     feedback: $("#feedback"),
     explainPanel: $("#explainPanel"),
+    explainToggleRow: $("#explainToggleRow"),
+    btnToggleExplain: $("#btnToggleExplain"),
+    toggleExplainLabel: $("#toggleExplainLabel"),
+    toggleExplainIcon: $("#toggleExplainIcon"),
     altPanel: $("#altPanel"),
     quizCard: $("#quizCard"),
     emptyState: $("#emptyState"),
@@ -396,6 +402,30 @@
     if (!el.explainPanel) return;
     el.explainPanel.classList.add("hidden");
     el.explainPanel.innerHTML = "";
+    if (el.explainToggleRow) el.explainToggleRow.classList.add("hidden");
+  }
+
+  function updateExplainToggleUI(hasExplain) {
+    if (!el.explainToggleRow || !el.btnToggleExplain) return;
+    if (!hasExplain) {
+      el.explainToggleRow.classList.add("hidden");
+      return;
+    }
+    el.explainToggleRow.classList.remove("hidden");
+    const shown = explainVisible;
+    el.btnToggleExplain.setAttribute("aria-expanded", shown ? "true" : "false");
+    el.btnToggleExplain.classList.toggle("is-collapsed", !shown);
+    if (el.toggleExplainLabel) {
+      el.toggleExplainLabel.textContent = shown ? "Ẩn giải thích" : "Hiện giải thích";
+    }
+    if (el.toggleExplainIcon) {
+      el.toggleExplainIcon.className = shown
+        ? "fa-solid fa-eye-slash"
+        : "fa-solid fa-lightbulb";
+    }
+    if (el.explainPanel) {
+      el.explainPanel.classList.toggle("hidden", !shown);
+    }
   }
 
   function showExplainPanel(q) {
@@ -447,7 +477,7 @@
     }
 
     el.explainPanel.innerHTML = html;
-    el.explainPanel.classList.remove("hidden");
+    updateExplainToggleUI(true);
   }
 
   function showAltPanel(q) {
@@ -713,6 +743,19 @@
   });
 
   el.btnGoAll.addEventListener("click", () => setMode("all"));
+
+  if (el.btnToggleExplain) {
+    el.btnToggleExplain.addEventListener("click", () => {
+      explainVisible = !explainVisible;
+      const q = currentQuestion();
+      const has =
+        answered &&
+        q &&
+        q.explanation &&
+        (q.explanation.whyCorrect || q.explanation.whyWrong);
+      updateExplainToggleUI(!!has);
+    });
+  }
 
   if (el.searchInput) {
     let searchTimer = null;

@@ -621,9 +621,30 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .alt-panel.hidden,
 .explain-panel.hidden { display: none; }
 
+/* —— Explanation toggle —— */
+.explain-toggle-row {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.explain-toggle-row.hidden {
+  display: none;
+}
+
+#btnToggleExplain {
+  gap: 8px;
+}
+
+#btnToggleExplain.is-collapsed {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+
 /* —— Explanation —— */
 .explain-panel {
-  margin-top: 14px;
+  margin-top: 12px;
   padding-top: 14px;
   border-top: 1px dashed var(--border);
   animation: fadeIn 0.28s ease;
