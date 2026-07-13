@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quiz MLN – Ôn tập trắc nghiệm</title>
+  <meta name="description" content="Quiz ôn tập trắc nghiệm: ngẫu nhiên, lưu câu sai, làm lại câu sai" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="header-top">
+        <div class="brand">
+          <span class="brand-icon" aria-hidden="true">📚</span>
+          <div>
+            <h1>Quiz MLN</h1>
+            <p class="subtitle">Ôn tập trắc nghiệm · tĩnh · GitHub Pages</p>
+          </div>
+        </div>
+        <div class="stats" id="statsBar">
+          <span class="stat" title="Số câu đúng trong phiên">
+            <strong id="statCorrect">0</strong> đúng
+          </span>
+          <span class="stat warn" title="Số câu sai đã lưu">
+            <strong id="statWrong">0</strong> sai
+          </span>
+          <span class="stat" title="Tiến độ trong bộ đang làm">
+            <strong id="statProgress">0</strong>/<span id="statTotal">0</span>
+          </span>
+        </div>
+      </div>
+
+      <nav class="tabs" role="tablist" aria-label="Chế độ làm bài">
+        <button type="button" class="tab active" data-tab="all" role="tab" aria-selected="true">
+          Tất cả câu
+          <span class="badge" id="badgeAll">0</span>
+        </button>
+        <button type="button" class="tab" data-tab="wrong" role="tab" aria-selected="false">
+          Câu sai
+          <span class="badge badge-warn" id="badgeWrong">0</span>
+        </button>
+      </nav>
+
+      <div class="toolbar">
+        <label class="toggle" title="Xáo trộn thứ tự câu hỏi">
+          <input type="checkbox" id="shuffleToggle" checked />
+          <span>Ngẫu nhiên</span>
+        </label>
+        <button type="button" class="btn btn-ghost" id="btnReshuffle" title="Xáo trộn lại">
+          🔀 Xáo lại
+        </button>
+        <button type="button" class="btn btn-ghost" id="btnResetSession" title="Đặt lại điểm phiên hiện tại">
+          ↺ Reset điểm
+        </button>
+        <button type="button" class="btn btn-danger-ghost" id="btnClearWrong" title="Xóa toàn bộ câu sai đã lưu">
+          🗑 Xóa câu sai
+        </button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="progress-wrap" aria-hidden="true">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <section class="card" id="quizCard">
+        <div class="card-meta">
+          <span class="q-index" id="qIndex">Câu 1</span>
+          <span class="q-id" id="qId" title="ID gốc trong ngân hàng câu hỏi"></span>
+        </div>
+        <h2 class="question" id="questionText">Đang tải…</h2>
+        <div class="options" id="options" role="listbox" aria-label="Các phương án"></div>
+        <div class="feedback hidden" id="feedback" role="status"></div>
+        <div class="alt-panel hidden" id="altPanel" aria-live="polite"></div>
+      </section>
+
+      <div class="empty hidden" id="emptyState">
+        <div class="empty-icon">🎉</div>
+        <h2 id="emptyTitle">Chưa có câu sai</h2>
+        <p id="emptyDesc">Khi bạn trả lời sai, câu hỏi sẽ được lưu ở tab này để làm lại.</p>
+        <button type="button" class="btn btn-primary" id="btnGoAll">Về tab Tất cả</button>
+      </div>
+
+      <nav class="nav-arrows" aria-label="Điều hướng câu hỏi">
+        <button type="button" class="btn btn-nav" id="btnPrev" title="Câu trước (←)">
+          <span class="arrow">←</span>
+          <span class="nav-label">Trước</span>
+        </button>
+        <div class="nav-center">
+          <input type="number" id="jumpInput" min="1" class="jump-input" title="Nhảy tới số câu" aria-label="Nhảy tới số câu" />
+          <button type="button" class="btn btn-ghost btn-sm" id="btnJump">Đi</button>
+        </div>
+        <button type="button" class="btn btn-nav" id="btnNext" title="Câu sau (→)">
+          <span class="nav-label">Sau</span>
+          <span class="arrow">→</span>
+        </button>
+      </nav>
+
+      <p class="hint">Phím tắt: <kbd>←</kbd> <kbd>→</kbd> chuyển câu · <kbd>1</kbd>–<kbd>4</kbd> chọn đáp án · <kbd>Enter</kbd> câu tiếp</p>
+    </main>
+
+    <footer class="footer">
+      <span>Dữ liệu từ <code>data.docx</code> · deploy tĩnh lên GitHub Pages</span>
+    </footer>
+  </div>
+
+  <script src="questions.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# OS / editor
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Local tooling / debug
+.grok-changes/
+__pycache__/
+*.pyc
+parse_log.txt
+kieu_dbg.txt
+kieu_all_samples.txt
+kieu_summary.txt
+debug_*.py
+debug_*.txt
+debug_*.json
+alt_dump*.json
+alt_report.txt
+miss.json
+miss.txt
+line_dbg.txt
+plog_ascii.txt
+check.txt
+tmp_lines.txt
+analyze_kieu.py
+report_alts.py
+parse_extract_kieu.py
+
+# Optional local extracts (source data kept as data.docx)
+data_extracted.txt
+
+# Unrelated leftover styles from other project
+css/
