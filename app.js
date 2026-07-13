@@ -267,18 +267,22 @@
     if (ok) {
       el.feedback.classList.add("ok");
       const multi = correctLetters(q).length > 1;
-      el.feedback.textContent = multi
-        ? `✓ Chính xác! (Đáp án: ${correctLetters(q).join(", ")})`
-        : "✓ Chính xác!";
+      const msg = multi
+        ? `Chính xác! (Đáp án: ${correctLetters(q).join(", ")})`
+        : "Chính xác!";
+      el.feedback.innerHTML = `<i class="fa-solid fa-circle-check"></i><span>${escapeHtml(msg)}</span>`;
     } else {
       el.feedback.classList.add("err");
-      el.feedback.textContent = `✗ Sai. Đáp án đúng: ${formatCorrectAnswer(q)}`;
+      el.feedback.innerHTML = `<i class="fa-solid fa-circle-xmark"></i><span>Sai. Đáp án đúng: ${escapeHtml(
+        formatCorrectAnswer(q)
+      )}</span>`;
     }
   }
 
   function hideFeedback() {
     el.feedback.classList.add("hidden");
     el.feedback.textContent = "";
+    el.feedback.innerHTML = "";
     el.feedback.classList.remove("ok", "err");
   }
 
@@ -297,7 +301,7 @@
       return;
     }
 
-    let html = `<div class="alt-panel-title">🔁 Kiểu hỏi khác <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-muted)">(${alts.length})</span></div>`;
+    let html = `<div class="alt-panel-title"><i class="fa-solid fa-retweet"></i> Kiểu hỏi khác <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--muted)">(${alts.length})</span></div>`;
 
     alts.forEach((alt, idx) => {
       const aq = escapeHtml(alt.question || "Biến thể");
@@ -307,13 +311,13 @@
       const ansText = alt.answerText || (ansLetter && opts[ansLetter]) || "";
 
       html += `<div class="alt-card">`;
-      html += `<div class="alt-label">Biến thể ${idx + 1}</div>`;
+      html += `<div class="alt-label"><i class="fa-solid fa-clone"></i> Biến thể ${idx + 1}</div>`;
       html += `<p class="alt-question">${aq}</p>`;
 
       if (letters.length) {
         html += `<div class="alt-options">`;
         letters.forEach((L) => {
-          const isOk = ansLetter && L === ansLetter;
+          const isOk = ansLetter && String(ansLetter).includes(L);
           html += `<div class="alt-opt${isOk ? " is-correct" : ""}">`;
           html += `<span class="alt-letter">${escapeHtml(L)}</span>`;
           html += `<span>${escapeHtml(opts[L] || "")}</span>`;
@@ -324,11 +328,11 @@
 
       if (ansLetter || ansText) {
         const label = ansLetter
-          ? `Đáp án: ${escapeHtml(ansLetter)}${ansText ? " — " + escapeHtml(ansText) : ""}`
+          ? `Đáp án: ${escapeHtml(String(ansLetter))}${ansText ? " — " + escapeHtml(ansText) : ""}`
           : `Đáp án: ${escapeHtml(ansText)}`;
-        html += `<p class="alt-answer">✓ ${label}</p>`;
+        html += `<p class="alt-answer"><i class="fa-solid fa-check"></i><span>${label}</span></p>`;
       } else {
-        html += `<p class="alt-answer" style="background:var(--warn-bg);border-color:rgba(245,158,11,.35);color:var(--warn)">⚠ Chưa có đáp án trong dữ liệu nguồn</p>`;
+        html += `<p class="alt-answer warn"><i class="fa-solid fa-triangle-exclamation"></i><span>Chưa có đáp án trong dữ liệu nguồn</span></p>`;
       }
 
       html += `</div>`;
@@ -463,13 +467,13 @@
     } else if (e.key === "ArrowRight" || e.key === "Enter") {
       e.preventDefault();
       go(1);
-    } else if (e.key >= "1" && e.key <= "4") {
+    } else if (e.key >= "1" && e.key <= "5") {
       const q = currentQuestion();
       if (!q || answered) return;
       const letters = Object.keys(q.options).sort();
       const letter = letters[Number(e.key) - 1];
       if (letter) onSelect(letter);
-    } else if (e.key === "a" || e.key === "A" || e.key === "b" || e.key === "B" || e.key === "c" || e.key === "C" || e.key === "d" || e.key === "D") {
+    } else if (/^[a-eA-E]$/.test(e.key)) {
       const q = currentQuestion();
       if (!q || answered) return;
       const letter = e.key.toUpperCase();
