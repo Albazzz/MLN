@@ -40,6 +40,7 @@
     btnSubmit: $("#btnSubmit"),
     submitCount: $("#submitCount"),
     feedback: $("#feedback"),
+    explainPanel: $("#explainPanel"),
     altPanel: $("#altPanel"),
     quizCard: $("#quizCard"),
     emptyState: $("#emptyState"),
@@ -304,10 +305,12 @@
 
     if (answered) {
       showFeedback(isCorrectSelection(q, selectedLetters), q);
+      showExplainPanel(q);
       showAltPanel(q);
       if (el.submitRow) el.submitRow.classList.add("hidden");
     } else {
       hideFeedback();
+      hideExplainPanel();
       hideAltPanel();
       updateSubmitUI(q);
     }
@@ -389,6 +392,59 @@
     el.altPanel.innerHTML = "";
   }
 
+  function hideExplainPanel() {
+    if (!el.explainPanel) return;
+    el.explainPanel.classList.add("hidden");
+    el.explainPanel.innerHTML = "";
+  }
+
+  function showExplainPanel(q) {
+    if (!el.explainPanel) return;
+    const exp = q && q.explanation;
+    if (!exp || (!exp.whyCorrect && !exp.whyWrong)) {
+      hideExplainPanel();
+      return;
+    }
+
+    const corrects = correctLetters(q);
+    let html = `<div class="explain-title"><i class="fa-solid fa-lightbulb"></i> Giải thích</div>`;
+
+    if (exp.whyCorrect) {
+      html += `<div class="explain-block explain-ok">
+        <div class="explain-label"><i class="fa-solid fa-circle-check"></i> Vì sao đúng</div>
+        <p>${escapeHtml(exp.whyCorrect)}</p>
+      </div>`;
+    }
+
+    const wrong = exp.whyWrong || {};
+    const wrongKeys = Object.keys(wrong).sort();
+    if (wrongKeys.length) {
+      html += `<div class="explain-block explain-bad">
+        <div class="explain-label"><i class="fa-solid fa-circle-xmark"></i> Vì sao các lựa chọn còn lại sai</div>
+        <ul class="explain-list">`;
+      wrongKeys.forEach((L) => {
+        const optText = (q.options && q.options[L]) || "";
+        html += `<li><strong>${escapeHtml(L)}${optText ? ". " + escapeHtml(optText) : ""}</strong>
+          <span>${escapeHtml(wrong[L])}</span></li>`;
+      });
+      html += `</ul></div>`;
+    }
+
+    // also list correct options clearly for multi
+    if (corrects.length > 1) {
+      html += `<div class="explain-block explain-keys">
+        <div class="explain-label"><i class="fa-solid fa-list-check"></i> Các đáp án đúng</div>
+        <ul class="explain-list">`;
+      corrects.forEach((L) => {
+        html += `<li><strong>${escapeHtml(L)}. ${escapeHtml((q.options && q.options[L]) || "")}</strong></li>`;
+      });
+      html += `</ul></div>`;
+    }
+
+    el.explainPanel.innerHTML = html;
+    el.explainPanel.classList.remove("hidden");
+  }
+
   function showAltPanel(q) {
     if (!el.altPanel) return;
     const alts = (q && q.alternatives) || [];
@@ -429,6 +485,9 @@
         html += `<p class="alt-answer"><i class="fa-solid fa-check"></i><span>${label}</span></p>`;
       } else {
         html += `<p class="alt-answer warn"><i class="fa-solid fa-triangle-exclamation"></i><span>Chưa có đáp án trong dữ liệu nguồn</span></p>`;
+      }
+      if (alt.explanation && alt.explanation.whyCorrect) {
+        html += `<p class="alt-explain"><i class="fa-solid fa-lightbulb"></i> ${escapeHtml(alt.explanation.whyCorrect)}</p>`;
       }
       html += `</div>`;
     });
@@ -491,6 +550,7 @@
     if (el.submitRow) el.submitRow.classList.add("hidden");
 
     showFeedback(ok, q);
+    showExplainPanel(q);
     showAltPanel(q);
     updateBadges();
   }
@@ -507,6 +567,7 @@
     index = next;
     answered = false;
     selectedLetters = [];
+    hideExplainPanel();
     hideAltPanel();
     render();
   }
@@ -517,6 +578,7 @@
     index = i;
     answered = false;
     selectedLetters = [];
+    hideExplainPanel();
     hideAltPanel();
     render();
   }

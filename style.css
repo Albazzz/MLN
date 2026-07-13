@@ -618,7 +618,105 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 .feedback.hidden,
 .empty.hidden,
 .quiz-card.hidden,
-.alt-panel.hidden { display: none; }
+.alt-panel.hidden,
+.explain-panel.hidden { display: none; }
+
+/* —— Explanation —— */
+.explain-panel {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+  animation: fadeIn 0.28s ease;
+}
+
+.explain-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.explain-block {
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.explain-block:last-child { margin-bottom: 0; }
+
+.explain-ok {
+  background: var(--correct-bg);
+  border-color: #b7ebc9;
+}
+
+.explain-bad {
+  background: #fff;
+  border-color: var(--border);
+}
+
+.explain-keys {
+  background: var(--accent-soft);
+  border-color: transparent;
+}
+
+.explain-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.explain-ok .explain-label { color: var(--correct); }
+.explain-bad .explain-label { color: var(--wrong); }
+.explain-keys .explain-label { color: var(--accent); }
+
+.explain-block p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.explain-list {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.explain-list li {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--border);
+}
+
+.explain-list li strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.86rem;
+  color: var(--text);
+}
+
+.explain-list li span {
+  color: var(--muted);
+  font-weight: 500;
+}
 
 /* —— Alt panel —— */
 .alt-panel {
@@ -727,6 +825,26 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   background: var(--warning-bg);
   border-color: rgba(230, 162, 60, 0.35);
   color: #a16207;
+}
+
+.alt-explain {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.45;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.alt-explain i {
+  color: var(--warning);
+  margin-top: 2px;
 }
 
 /* —— Empty —— */
