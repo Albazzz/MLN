@@ -1,6 +1,6 @@
 # Quiz MLN – Ôn tập trắc nghiệm
 
-Ứng dụng quiz tĩnh (HTML + CSS + JS), không cần server backend. Dữ liệu lấy từ `data.docx` (~540 câu, gồm biến thể kiểu hỏi khác).
+Ứng dụng quiz tĩnh (HTML + CSS + JS), không cần server backend. Dữ liệu lấy từ `data.docx` — **526 câu chính** (không tính “kiểu hỏi khác”; biến thể chỉ hiện phụ sau khi chọn).
 
 ## Tính năng
 
