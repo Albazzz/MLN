@@ -409,10 +409,15 @@
     const corrects = correctLetters(q);
     let html = `<div class="explain-title"><i class="fa-solid fa-lightbulb"></i> Giải thích</div>`;
 
+    const fmt = (s) =>
+      escapeHtml(s || "")
+        .replace(/\n•/g, "<br>•")
+        .replace(/\n/g, "<br>");
+
     if (exp.whyCorrect) {
       html += `<div class="explain-block explain-ok">
         <div class="explain-label"><i class="fa-solid fa-circle-check"></i> Vì sao đúng</div>
-        <p>${escapeHtml(exp.whyCorrect)}</p>
+        <p>${fmt(exp.whyCorrect)}</p>
       </div>`;
     }
 
@@ -425,7 +430,7 @@
       wrongKeys.forEach((L) => {
         const optText = (q.options && q.options[L]) || "";
         html += `<li><strong>${escapeHtml(L)}${optText ? ". " + escapeHtml(optText) : ""}</strong>
-          <span>${escapeHtml(wrong[L])}</span></li>`;
+          <span>${fmt(wrong[L])}</span></li>`;
       });
       html += `</ul></div>`;
     }
